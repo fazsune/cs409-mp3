@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Task = require('../models/schemas.js').Task;
+const User = require('../models/schemas.js').User;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function process_request(request, query) {
