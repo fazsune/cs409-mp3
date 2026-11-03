@@ -68,8 +68,31 @@ module.exports = function (router) {
 
   // Respond with details of specified task or 404 error.
   tasksIdRoute.get(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    try {
+      if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
+      const taskId = req.params['id'];
+      const query = Task.findById(taskId); // mongoose query builder
+      query.collection(Task.collection);
+      query.select({ __v: 0 }); // hide "__v" (version number)
+      if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
+      const result = await query.exec();
+      if (result == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
+      res.status(200).json({ message: 'OK', data: result });
+    } catch (error) {
+      if (error instanceof TypeError) {
+        res.status(404).json({ message: 'NONE', data: {errors: [error.message]} });
+      } else if (error instanceof mongoose.Error.CastError) {
+        res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found. - (invalid \'id\' parameter)']} });
+      } else if (error instanceof mongoose.Error.DocumentNotFoundError) {
+        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found.'] } }); // errors: [error.message]
+      } else if (error instanceof SyntaxError) {
+        // invalid GET (JSON) data
+        res.status(400).json({ message: 'ERROR', data: {errors: ['Failed to parse JSON data.']} });
+      } else {
+        // something else
+        res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
+      }
+    }
   });
 
   // Replace entire task with supplied task or 404 error.
