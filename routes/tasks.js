@@ -134,8 +134,29 @@ module.exports = function (router) {
 
   // Delete specified task or 404 error.
   tasksIdRoute.delete(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    try {
+      if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
+      const taskId = req.params['id'];
+      // mongoose will commit the transaction if the async function
+      // executes successfully and attempt to retry if there was retryable error.
+      await Task.db.transaction(async () => { // (session)
+        const foundTask = await Task.findOne({ _id: taskId }, null, { runValidators: true });
+        if (foundTask == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
+        await Task.deleteOne({ _id: taskId }, { runValidators: true });
+        res.status(204).json({ message: 'OK', data: {} });
+      });
+    } catch (error) {
+      if (error instanceof TypeError) {
+        res.status(404).json({ message: 'NONE', data: { errors: [error.message] } });
+      } else if (error instanceof mongoose.Error.CastError) {
+        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found. - (invalid \'id\' parameter)'] } });
+      } else if (error instanceof mongoose.Error.DocumentNotFoundError) {
+        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found.'] } }); // errors: [error.message]
+      } else {
+        // something else
+        res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
+      }
+    }
   });
 
 
