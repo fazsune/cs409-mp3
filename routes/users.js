@@ -55,7 +55,7 @@ module.exports = function (router) {
         res.status(400).json({ message: 'ERROR', data: { errors: errors } });
       } else if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
         // duplicate key
-        res.status(400).json({ message: 'ERROR', data: {errors: ['\'' + Object.keys(error.errorResponse.keyValue)[0] + '\' parameter is already in use by another user']} });
+        res.status(400).json({ message: 'ERROR', data: {errors: ['\'' + Object.keys(error.errorResponse.keyValue)[0] + '\' parameter is already in use by another user.']} });
       } else {
         // something else
         res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
@@ -70,12 +70,13 @@ module.exports = function (router) {
   // Respond with details of specified user or 404 error.
   usersIdRoute.get(async function (req, res) {
     try {
-      if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found'); }
+      if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const userId = req.params['id'];
       const query = User.findById(userId); // mongoose query builder
       query.collection(User.collection);
       if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
       const result = await query.exec();
+      if (result == null) { throw new TypeError('User was not found.'); }
       res.status(200).json({ message: 'OK', data: result });
     } catch (error) {
       if (error instanceof TypeError) {
