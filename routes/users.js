@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/schemas.js').User;
 
-// utility: Process API parameters (where, sort, select, skip, limit, count)
+// Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function process_request(request, query) {
   if (request['where']) { query.where(JSON.parse(request['where'])); }
   if (request['sort']) { query.sort(JSON.parse(request['sort'])); }
@@ -12,12 +12,13 @@ async function process_request(request, query) {
   return await query.exec();
 }
 
+
 module.exports = function (router) {
   const usersRoute = router.route('/users');
   const usersIdRoute = router.route('/users/:id');
 
 
-  // Endpoint: "users"
+  // Endpoint: "users" //
 
   // Respond with a List of users.
   usersRoute.get(async function (req, res) {
@@ -29,16 +30,15 @@ module.exports = function (router) {
     } catch (error) {
       if (error instanceof SyntaxError) {
         // invalid GET (JSON) data
-        res.status(400).json({ message: 'ERROR', data: {errors: ['Could not parse JSON data.']} });
+        res.status(400).json({ message: 'ERROR', data: {errors: ['Failed to parse JSON data.']} });
       } else {
         // something else
-        console.log(error);
         res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
       }
     }
   });
 
-  // Create a new user. Respond with details of new user.
+  // Create a new user, respond with details of new user.
   usersRoute.post(async function (req, res) {
     try {
       const newUser = new User(req.body); // validate using mongoose
@@ -64,25 +64,45 @@ module.exports = function (router) {
   });
 
 
-  // Endpoint: "users/:id"
+  // Endpoint: "users/:id" //
 
+  
   // Respond with details of specified user or 404 error.
   usersIdRoute.get(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    try {
+      if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found'); }
+      const userId = req.params['id'];
+      const query = User.findById(userId); // mongoose query builder
+      query.collection(User.collection);
+      if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
+      const result = await query.exec();
+      res.status(200).json({ message: 'OK', data: result });
+    } catch (error) {
+      if (error instanceof TypeError) {
+        res.status(404).json({ message: 'NONE', data: {errors: [error.message]} });
+      } else if (error instanceof mongoose.Error.CastError) {
+        res.status(404).json({ message: 'NONE', data: {errors: ['User was not found. - (invalid \'id\' parameter)']} });
+      } else if (error instanceof SyntaxError) {
+        // invalid GET (JSON) data
+        res.status(400).json({ message: 'ERROR', data: {errors: ['Failed to parse JSON data.']} });
+      } else {
+        // something else
+        console.log(error);
+        res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
+      }
+    }
   });
 
   // Replace entire user with supplied user or 404 error.
   usersIdRoute.put(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    
   });
 
   // Delete specified user or 404 error.
   usersIdRoute.delete(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    
   });
+
 
   return router;
 }
