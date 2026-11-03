@@ -24,8 +24,20 @@ module.exports = function (router) {
 
   // Respond with a List of tasks.
   tasksRoute.get(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    try {
+      const query = Task.find(); // mongoose query builder
+      query.collection(Task.collection);
+      const result = await process_request(req.query, query);
+      res.status(200).json({ message: 'OK', data: result });
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        // invalid GET (JSON) data
+        res.status(400).json({ message: 'ERROR', data: {errors: ['Failed to parse JSON data.']} });
+      } else {
+        // something else
+        res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
+      }
+    }
   });
 
   // Create a new task, respond with details of new task.
