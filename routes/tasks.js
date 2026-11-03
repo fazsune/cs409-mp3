@@ -3,7 +3,6 @@ const Task = require('../models/schemas.js').Task;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function process_request(request, query) {
-  query.select({ __v: 0 }); // hide "__v" (version number)
   if (request['where']) { query.where(JSON.parse(request['where'])); }
   if (request['sort']) { query.sort(JSON.parse(request['sort'])); }
   if (request['select']) { query.select(JSON.parse(request['select'])); }
@@ -11,6 +10,7 @@ async function process_request(request, query) {
   if (request['limit']) { query.limit(JSON.parse(request['limit'])); }
   else { query.limit(100); } // limit to 100 results by default for tasks
   if (request['count'] && JSON.parse(request['count']) == true) { return { count: await query.countDocuments() }; }
+  query.select({ __v: 0 }); // hide "__v" (version number)
   return await query.exec();
 }
 
@@ -73,8 +73,8 @@ module.exports = function (router) {
       const taskId = req.params['id'];
       const query = Task.findById(taskId); // mongoose query builder
       query.collection(Task.collection);
-      query.select({ __v: 0 }); // hide "__v" (version number)
       if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
+      query.select({ __v: 0 }); // hide "__v" (version number)
       const result = await query.exec();
       if (result == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
       res.status(200).json({ message: 'OK', data: result });

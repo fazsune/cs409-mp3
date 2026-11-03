@@ -3,13 +3,13 @@ const User = require('../models/schemas.js').User;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function process_request(request, query) {
-  query.select({ __v: 0 }); // hide "__v" (version number)
   if (request['where']) { query.where(JSON.parse(request['where'])); }
   if (request['sort']) { query.sort(JSON.parse(request['sort'])); }
   if (request['select']) { query.select(JSON.parse(request['select'])); }
   if (request['skip']) { query.skip(JSON.parse(request['skip'])); }
   if (request['limit']) { query.limit(JSON.parse(request['limit'])); }
   if (request['count'] && JSON.parse(request['count']) == true) { return { count: await query.countDocuments() }; }
+  query.select({ __v: 0 }); // hide "__v" (version number)
   return await query.exec();
 }
 
@@ -76,8 +76,8 @@ module.exports = function (router) {
       const userId = req.params['id'];
       const query = User.findById(userId); // mongoose query builder
       query.collection(User.collection);
-      query.select({ __v: 0 }); // hide "__v" (version number)
       if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
+      query.select({ __v: 0 }); // hide "__v" (version number)
       const result = await query.exec();
       if (result == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
       res.status(200).json({ message: 'OK', data: result });
