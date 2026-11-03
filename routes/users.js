@@ -3,6 +3,7 @@ const User = require('../models/schemas.js').User;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function process_request(request, query) {
+  query.select({ __v: 0 }); // hide "__v" (version number)
   if (request['where']) { query.where(JSON.parse(request['where'])); }
   if (request['sort']) { query.sort(JSON.parse(request['sort'])); }
   //if (request['select']) { query.select(JSON.parse(request['select'])); }
@@ -25,7 +26,6 @@ module.exports = function (router) {
     try {
       const query = User.find(); // mongoose query builder
       query.collection(User.collection);
-      query.select({ __v: 0 }); // hide "__v" (version number)
       const result = await process_request(req.query, query);
       res.status(200).json({ message: 'OK', data: result });
     } catch (error) {

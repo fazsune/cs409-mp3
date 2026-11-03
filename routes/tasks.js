@@ -3,6 +3,7 @@ const Task = require('../models/schemas.js').Task;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function process_request(request, query) {
+  query.select({ __v: 0 }); // hide "__v" (version number)
   if (request['where']) { query.where(JSON.parse(request['where'])); }
   if (request['sort']) { query.sort(JSON.parse(request['sort'])); }
   //if (request['select']) { query.select(JSON.parse(request['select'])); }
