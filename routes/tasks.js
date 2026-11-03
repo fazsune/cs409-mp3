@@ -49,7 +49,7 @@ module.exports = function (router) {
       // executes successfully and attempt to retry if there was retryable error.
       await Task.db.transaction(async () => { // (session)
         const savedTask = await newTask.save();
-        res.status(201).json({ message: 'OK', data: {_id: savedTask._id, name: savedTask.name, email: savedTask.email, pendingTasks: savedTask.pendingTasks, dateCreated: savedTask.dateCreated} });
+        res.status(201).json({ message: 'OK', data: {_id: savedTask._id, name: savedTask.name, description: savedTask.description, deadline: savedTask.deadline, completed: savedTask.completed, assignedUser: savedTask.assignedUser, assignedUserName: savedTask.assignedUserName, dateCreated: savedTask.dateCreated} });
       });
     } catch (error) {
       if (error instanceof mongoose.Error.ValidationError) {
