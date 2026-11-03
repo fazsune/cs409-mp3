@@ -130,7 +130,6 @@ module.exports = function (router) {
         res.status(400).json({ message: 'ERROR', data: {errors: ['\'' + Object.keys(error.errorResponse.keyValue)[0] + '\' parameter is already in use by another user.']} });
       } else {
         // something else
-        console.log(error);
         res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
       }
     }
@@ -138,7 +137,29 @@ module.exports = function (router) {
 
   // Delete specified user or 404 error.
   usersIdRoute.delete(async function (req, res) {
-    
+    try {
+      if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
+      const userId = req.params['id'];
+      // mongoose will commit the transaction if the async function
+      // executes successfully and attempt to retry if there was retryable error.
+      await User.db.transaction(async () => { // (session)
+        const foundUser = await User.findOne({ _id: userId }, null, { runValidators: true });
+        if (foundUser == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
+        await User.deleteOne({ _id: userId }, { runValidators: true });
+        res.status(204).json({ message: 'OK', data: {} });
+      });
+    } catch (error) {
+      if (error instanceof TypeError) {
+        res.status(404).json({ message: 'NONE', data: { errors: [error.message] } });
+      } else if (error instanceof mongoose.Error.CastError) {
+        res.status(404).json({ message: 'NONE', data: { errors: ['User was not found. - (invalid \'id\' parameter)'] } });
+      } else if (error instanceof mongoose.Error.DocumentNotFoundError) {
+        res.status(404).json({ message: 'NONE', data: { errors: ['User was not found.'] } }); // errors: [error.message]
+      } else {
+        // something else
+        res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
+      }
+    }
   });
 
 
