@@ -46,6 +46,17 @@ module.exports = function (router) {
       await newTask.validate(); // validate using mongoose
       // mongoose will commit the transaction if the async function
       // executes successfully and attempt to retry if there was retryable error.
+      if (req.body['assignedUser'] && req.body['assignedUserName']) {
+        const foundUser = await User.findOne({ _id: req.body['assignedUser'], name: req.body['assignedUserName'] }, null, { runValidators: true });
+        if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
+        else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = req.body['assignedUserName']; }
+      } else if (req.body['assignedUser']) {
+        const foundUser = await User.findOne({ _id: req.body['assignedUser'] }, null, { runValidators: true });
+        if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found.'); }
+        else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = foundUser.name; }
+      } else if (req.body['assignedUserName']) {
+        // ignore because we don't have the user's id (multiple users can have the same name)
+      }
       await Task.db.transaction(async () => { // (session)
         const savedTask = await newTask.save();
         res.status(201).json({ message: 'OK', data: {_id: savedTask._id, name: savedTask.name, description: savedTask.description, deadline: savedTask.deadline, completed: savedTask.completed, assignedUser: savedTask.assignedUser, assignedUserName: savedTask.assignedUserName, dateCreated: savedTask.dateCreated} });
