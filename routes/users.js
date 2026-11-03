@@ -110,7 +110,7 @@ module.exports = function (router) {
         if (foundUser == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
         if (req.body['name']) { foundUser.name = req.body['name']; }
         if (req.body['email']) { foundUser.email = req.body['email']; }
-        if (req.body['pendingTasks']) { foundUser.email = req.body['pendingTasks']; }
+        if (req.body['pendingTasks']) { foundUser.pendingTasks = req.body['pendingTasks']; }
         await foundUser.save();
         res.status(200).json({ message: 'OK', data: {_id: foundUser._id, name: foundUser.name, email: foundUser.email, pendingTasks: foundUser.pendingTasks, dateCreated: foundUser.dateCreated} });
       });
