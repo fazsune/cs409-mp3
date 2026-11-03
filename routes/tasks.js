@@ -55,7 +55,7 @@ module.exports = function (router) {
       if (error instanceof mongoose.Error.ValidationError) {
         // invalid POST (schema) data
         const errors = Object.values(error.errors).map(err => err.message);
-        res.status(400).json({ message: 'ERROR', data: { errors: errors } });
+        res.status(400).json({ message: 'ERROR', data: {errors: errors} });
       } else {
         // something else
         res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
@@ -79,12 +79,12 @@ module.exports = function (router) {
       if (result == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
       res.status(200).json({ message: 'OK', data: result });
     } catch (error) {
-      if (error instanceof TypeError) {
-        res.status(404).json({ message: 'NONE', data: {errors: [error.message]} });
-      } else if (error instanceof mongoose.Error.CastError) {
+      if (error instanceof mongoose.Error.CastError) {
         res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found. - (invalid \'id\' parameter)']} });
       } else if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found.'] } }); // errors: [error.message]
+        res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found.']} }); // errors: [error.message]
+      } else if (error instanceof TypeError) {
+        res.status(400).json({ message: 'ERROR', data: {errors: [error.message]} });
       } else if (error instanceof SyntaxError) {
         // invalid GET (JSON) data
         res.status(400).json({ message: 'ERROR', data: {errors: ['Failed to parse JSON data.']} });
@@ -124,16 +124,16 @@ module.exports = function (router) {
         res.status(200).json({ message: 'OK', data: {_id: foundTask._id, name: foundTask.name, description: foundTask.description, deadline: foundTask.deadline, completed: foundTask.completed, assignedUser: foundTask.assignedUser, assignedUserName: foundTask.assignedUserName, dateCreated: foundTask.dateCreated} });
       });
     } catch (error) {
-      if (error instanceof TypeError) {
-        res.status(404).json({ message: 'NONE', data: { errors: [error.message] } });
-      } else if (error instanceof mongoose.Error.CastError) {
-        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found. - (invalid \'id\' parameter)'] } });
+      if (error instanceof mongoose.Error.CastError) {
+        res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found. - (invalid \'id\' parameter)']} });
       } else if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found.'] } }); // errors: [error.message]
+        res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found.']} }); // errors: [error.message]
+      } else if (error instanceof TypeError) {
+        res.status(400).json({ message: 'ERROR', data: {errors: [error.message]} });
       } else if (error instanceof mongoose.Error.ValidationError) {
         // invalid POST (schema) data
         const errors = Object.values(error.errors).map(err => err.message);
-        res.status(400).json({ message: 'ERROR', data: { errors: errors } });
+        res.status(400).json({ message: 'ERROR', data: {errors: errors} });
       } else {
         // something else
         res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
@@ -155,12 +155,12 @@ module.exports = function (router) {
         res.status(204).json({ message: 'OK', data: {} });
       });
     } catch (error) {
-      if (error instanceof TypeError) {
-        res.status(404).json({ message: 'NONE', data: { errors: [error.message] } });
-      } else if (error instanceof mongoose.Error.CastError) {
-        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found. - (invalid \'id\' parameter)'] } });
+      if (error instanceof mongoose.Error.CastError) {
+        res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found. - (invalid \'id\' parameter)']} });
       } else if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        res.status(404).json({ message: 'NONE', data: { errors: ['Task was not found.'] } }); // errors: [error.message]
+        res.status(404).json({ message: 'NONE', data: {errors: ['Task was not found.']} }); // errors: [error.message]
+      } else if (error instanceof TypeError) {
+        res.status(400).json({ message: 'ERROR', data: {errors: [error.message]} });
       } else {
         // something else
         res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
