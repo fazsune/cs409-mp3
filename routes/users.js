@@ -24,10 +24,14 @@ module.exports = function (router) {
   // Respond with a List of users.
   usersRoute.get(async function (req, res) {
     try {
-      const query = User.find(); // mongoose query builder
-      query.collection(User.collection);
-      const result = await process_request(req.query, query);
-      res.status(200).json({ message: 'OK', data: result });
+      // mongoose will commit the transaction if the async function
+      // executes successfully and attempt to retry if there was retryable error.
+      await User.db.transaction(async () => { // (session)
+        const query = User.find(); // mongoose query builder
+        query.collection(User.collection);
+        const result = await process_request(req.query, query);
+        res.status(200).json({ message: 'OK', data: result });
+      });
     } catch (error) {
       if (error instanceof SyntaxError) { // invalid GET (JSON) data
         res.status(400).json({ message: 'ERROR', data: {errors: ['Failed to parse JSON data.']} });
@@ -69,13 +73,17 @@ module.exports = function (router) {
     try {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const userId = req.params['id'];
-      const query = User.findById(userId); // mongoose query builder
-      query.collection(User.collection);
-      if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
-      query.select({ __v: 0 }); // hide "__v" (version number)
-      const result = await query.exec();
-      if (result == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
-      res.status(200).json({ message: 'OK', data: result });
+      // mongoose will commit the transaction if the async function
+      // executes successfully and attempt to retry if there was retryable error.
+      await User.db.transaction(async () => { // (session)
+        const query = User.findById(userId); // mongoose query builder
+        query.collection(User.collection);
+        if (req.query['select']) { query.select(JSON.parse(req.query['select'])); }
+        query.select({ __v: 0 }); // hide "__v" (version number)
+        const result = await query.exec();
+        if (result == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
+        res.status(200).json({ message: 'OK', data: result });
+      });
     } catch (error) {
       if (error instanceof mongoose.Error.CastError) { // invalid id parameter
         res.status(404).json({ message: 'NONE', data: {errors: ['User was not found. - (invalid \'id\' parameter)']} });
