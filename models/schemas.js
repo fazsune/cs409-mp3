@@ -6,8 +6,8 @@ const mongoose = require('mongoose');
 
 // Define our User schema
 const UserSchema = new mongoose.Schema({
-  name: { type: String, required: [true, '"name" parameter is required'], unique: true },
-  email: { type: String, required: [true, '"email" parameter is required'] },
+  name: { type: String, required: [true, '"name" parameter is required'] },
+  email: { type: String, required: [true, '"email" parameter is required'], unique: true },
   pendingTasks: { type: [String], default: [] }, // The _id fields of the pending tasks that this user has.
   dateCreated: { type: Date, default: Date.now, immutable: true } // Should be set automatically by server..
 });
@@ -20,7 +20,7 @@ const User = mongoose.model('User', UserSchema);
 const TaskSchema = new mongoose.Schema({
   name: { type: String, required: [true, '"name" parameter is required'] },
   description: { type: String, default: '' },
-  deadline: { type: Date },
+  deadline: { type: Date, required: [true, '"deadline" parameter is required'] },
   completed: { type: Boolean, default: false },
   assignedUser: { type: String, default: "" }, // The _id field of the user this task is assigned to (we assume that each task can be assigned to only one user).
   assignedUserName: { type: String, default: "unassigned" }, // The name field of the user this task is assigned to.
