@@ -109,8 +109,17 @@ module.exports = function (router) {
         if (req.body['description']) { foundTask.description = req.body['description']; }
         if (req.body['deadline']) { foundTask.deadline = req.body['deadline']; }
         if (req.body['completed']) { foundTask.completed = req.body['completed']; }
-        if (req.body['assignedUser']) { foundTask.assignedUser = req.body['assignedUser']; }
-        if (req.body['assignedUserName']) { foundTask.assignedUserName = req.body['assignedUserName']; }
+        if (req.body['assignedUser'] && req.body['assignedUserName']) {
+          const foundUser = await User.findOne({ _id: req.body['assignedUser'], name: req.body['assignedUserName'] }, null, { runValidators: true });
+          if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
+          else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = req.body['assignedUserName']; }
+        } else if (req.body['assignedUser']) {
+          const foundUser = await User.findOne({ _id: req.body['assignedUser'] }, null, { runValidators: true });
+          if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found.'); }
+          else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = foundUser.name; }
+        } else if (req.body['assignedUserName']) {
+          // ignore because we don't have the user's id (multiple users can have the same name)
+        }
         await foundTask.save();
         res.status(200).json({ message: 'OK', data: {_id: foundTask._id, name: foundTask.name, description: foundTask.description, deadline: foundTask.deadline, completed: foundTask.completed, assignedUser: foundTask.assignedUser, assignedUserName: foundTask.assignedUserName, dateCreated: foundTask.dateCreated} });
       });
