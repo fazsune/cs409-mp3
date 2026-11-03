@@ -42,8 +42,25 @@ module.exports = function (router) {
 
   // Create a new task, respond with details of new task.
   tasksRoute.post(async function (req, res) {
-    var connectionString = process.env.TOKEN;
-    res.json({ message: 'My connection string is ' + connectionString });
+    try {
+      const newTask = new Task(req.body);
+      await newTask.validate(); // validate using mongoose
+      // mongoose will commit the transaction if the async function
+      // executes successfully and attempt to retry if there was retryable error.
+      await Task.db.transaction(async () => { // (session)
+        const savedTask = await newTask.save();
+        res.status(201).json({ message: 'OK', data: {_id: savedTask._id, name: savedTask.name, email: savedTask.email, pendingTasks: savedTask.pendingTasks, dateCreated: savedTask.dateCreated} });
+      });
+    } catch (error) {
+      if (error instanceof mongoose.Error.ValidationError) {
+        // invalid POST (schema) data
+        const errors = Object.values(error.errors).map(err => err.message);
+        res.status(400).json({ message: 'ERROR', data: { errors: errors } });
+      } else {
+        // something else
+        res.status(500).json({ message: 'ERROR', data: {errors: ['An unexpected internal error has occurred. Please retry your request later.']} });
+      }
+    }
   });
 
 
