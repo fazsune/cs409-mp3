@@ -3,7 +3,7 @@ const Task = require('../models/schemas.js').Task;
 const User = require('../models/schemas.js').User;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
-async function process_request(request, query) {
+async function processRequest(request, query) {
   if (request['where']) { query.where(JSON.parse(request['where'])); }
   if (request['sort']) { query.sort(JSON.parse(request['sort'])); }
   if (request['select']) { query.select(JSON.parse(request['select'])); }
@@ -31,7 +31,7 @@ module.exports = function (router) {
       await User.db.transaction(async () => { // (session)
         const query = Task.find(); // mongoose query builder
         query.collection(Task.collection);
-        const result = await process_request(req.query, query);
+        const result = await processRequest(req.query, query);
         res.status(200).json({ message: 'OK', data: result });
       });
     } catch (error) {
