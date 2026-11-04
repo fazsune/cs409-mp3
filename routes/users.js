@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const User = require('../models/schemas.js').User;
+const Task = require('../models/schemas.js').Task;
 
 // Utility: Process API parameters (where, sort, select, skip, limit, count).
 async function processRequest(request, query) {
@@ -11,6 +12,34 @@ async function processRequest(request, query) {
   if (request['count'] && JSON.parse(request['count']) == true) { return { count: await query.countDocuments() }; }
   query.select({ __v: 0 }); // hide "__v" (version number)
   return await query.exec();
+}
+
+// Utility: Ensure two-way referencing (pendingTasks <-> assignedUser, assignedUserName)
+async function verifyTwoWayRef(user, request) {
+  if (request['pendingTasks']) {
+    for (const task in request['pendingTasks']) {
+      const foundTask = await Task.findOne({ _id: task }, null, { runValidators: true });
+      if (foundTask != null) {
+        if (foundTask.assignedUser == '' && foundTask.completed == false) {
+          foundTask.assignedUser = user._id;
+          foundTask.assignedUserName = user.name;
+          await foundTask.save();
+        } else {
+          throw new TypeError('A task (' + task + ') in \'pendingTasks\' already has an assigned user or is completed.');
+        }
+      } else {
+        throw new TypeError('A task (' + task + ') in \'pendingTasks\' does not exist or is invalid.');
+      }
+    }
+    for (const task in task.pendingTasks.filter(task => !request['pendingTasks'].includes(task))) {
+      const foundTask = await Task.findOne({ _id: task }, null, { runValidators: true });
+      if (foundTask != null) {
+        foundTask.assignedUser = '';
+        foundTask.assignedUserName = 'unassigned';
+        await foundTask.save();
+      }
+    }
+  }
 }
 
 
@@ -46,6 +75,7 @@ module.exports = function (router) {
     try {
       const newUser = new User(req.body);
       await newUser.validate(); // validate using mongoose
+      await verifyTwoWayRef(newUser, req.body);
       // mongoose will commit the transaction if the async function
       // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
@@ -111,6 +141,7 @@ module.exports = function (router) {
         if (foundUser == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
         if (req.body['name']) { foundUser.name = req.body['name']; }
         if (req.body['email']) { foundUser.email = req.body['email']; }
+        await verifyTwoWayRef(foundUser, req.body); // verify two-way refs before updating pendingTasks
         if (req.body['pendingTasks']) { foundUser.pendingTasks = req.body['pendingTasks']; }
         await foundUser.save();
         res.status(200).json({ message: 'OK', data: {_id: foundUser._id, name: foundUser.name, email: foundUser.email, pendingTasks: foundUser.pendingTasks, dateCreated: foundUser.dateCreated} });
