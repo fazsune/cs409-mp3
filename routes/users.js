@@ -17,7 +17,7 @@ async function processRequest(request, query) {
 // Utility: Ensure two-way referencing (pendingTasks <-> assignedUser, assignedUserName)
 async function verifyTwoWayRef(user, request) {
   if (request['pendingTasks']) {
-    for (const task in request['pendingTasks']) {
+    for (const task of request['pendingTasks']) {
       const foundTask = await Task.findOne({ _id: task }, null, { runValidators: true });
       if (foundTask != null) {
         if (foundTask.assignedUser == '' && foundTask.completed == false) {
@@ -31,7 +31,7 @@ async function verifyTwoWayRef(user, request) {
         throw new TypeError('A task (' + task + ') in \'pendingTasks\' does not exist or is invalid.');
       }
     }
-    for (const task in user.pendingTasks.filter(task => !request['pendingTasks'].includes(task))) {
+    for (const task of user.pendingTasks.filter(task => !request['pendingTasks'].includes(task))) {
       const foundTask = await Task.findOne({ _id: task }, null, { runValidators: true });
       if (foundTask != null) {
         foundTask.assignedUser = '';
@@ -148,6 +148,7 @@ module.exports = function (router) {
       });
     } catch (error) {
       if (error instanceof mongoose.Error.CastError) { // invalid id parameter
+        console.log(error)
         res.status(404).json({ message: 'NONE', data: {errors: ['User was not found. - (invalid \'id\' parameter)']} });
       } else if (error instanceof mongoose.Error.DocumentNotFoundError) { // not found
         res.status(404).json({ message: 'NONE', data: {errors: ['User was not found.']} }); // errors: [error.message]
