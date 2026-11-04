@@ -25,7 +25,7 @@ module.exports = function (router) {
   usersRoute.get(async function (req, res) {
     try {
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const query = User.find(); // mongoose query builder
         query.collection(User.collection);
@@ -47,7 +47,7 @@ module.exports = function (router) {
       const newUser = new User(req.body);
       await newUser.validate(); // validate using mongoose
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const savedUser = await newUser.save();
         res.status(201).json({ message: 'OK', data: {_id: savedUser._id, name: savedUser.name, email: savedUser.email, pendingTasks: savedUser.pendingTasks, dateCreated: savedUser.dateCreated} });
@@ -74,7 +74,7 @@ module.exports = function (router) {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const userId = req.params['id'];
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const query = User.findById(userId); // mongoose query builder
         query.collection(User.collection);
@@ -105,7 +105,7 @@ module.exports = function (router) {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const userId = req.params['id'];
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const foundUser = await User.findOne({ _id: userId }, null, { runValidators: true });
         if (foundUser == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
@@ -139,7 +139,7 @@ module.exports = function (router) {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const userId = req.params['id'];
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const foundUser = await User.findOne({ _id: userId }, null, { runValidators: true });
         if (foundUser == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }

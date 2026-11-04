@@ -27,7 +27,7 @@ module.exports = function (router) {
   tasksRoute.get(async function (req, res) {
     try {
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const query = Task.find(); // mongoose query builder
         query.collection(Task.collection);
@@ -49,7 +49,7 @@ module.exports = function (router) {
       const newTask = new Task(req.body);
       await newTask.validate(); // validate using mongoose
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       if (req.body['assignedUser'] && req.body['assignedUserName']) {
         const foundUser = await User.findOne({ _id: req.body['assignedUser'], name: req.body['assignedUserName'] }, null, { runValidators: true });
         if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
@@ -86,7 +86,7 @@ module.exports = function (router) {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const taskId = req.params['id'];
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await User.db.transaction(async () => { // (session)
         const query = Task.findById(taskId); // mongoose query builder
         query.collection(Task.collection);
@@ -117,7 +117,7 @@ module.exports = function (router) {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const taskId = req.params['id'];
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await Task.db.transaction(async () => { // (session)
         const foundTask = await Task.findOne({ _id: taskId }, null, { runValidators: true });
         if (foundTask == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
@@ -161,7 +161,7 @@ module.exports = function (router) {
       if (!('id' in req.params)) { throw new TypeError('\'id\' parameter was not found.'); }
       const taskId = req.params['id'];
       // mongoose will commit the transaction if the async function
-      // executes successfully and attempt to retry if there was retryable error.
+      // executes successfully and attempt to retry if there was retryable error
       await Task.db.transaction(async () => { // (session)
         const foundTask = await Task.findOne({ _id: taskId }, null, { runValidators: true });
         if (foundTask == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
