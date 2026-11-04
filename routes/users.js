@@ -31,7 +31,7 @@ async function verifyTwoWayRef(user, request) {
         throw new TypeError('A task (' + task + ') in \'pendingTasks\' does not exist or is invalid.');
       }
     }
-    for (const task in task.pendingTasks.filter(task => !request['pendingTasks'].includes(task))) {
+    for (const task in user.pendingTasks.filter(task => !request['pendingTasks'].includes(task))) {
       const foundTask = await Task.findOne({ _id: task }, null, { runValidators: true });
       if (foundTask != null) {
         foundTask.assignedUser = '';
