@@ -15,6 +15,38 @@ async function processRequest(request, query) {
   return await query.exec();
 }
 
+// Utility: Ensure two-way referencing (assignedUser, assignedUserName <-> pendingTasks)
+async function verifyTwoWayRef(task, request) {
+  let foundUser, newAssignedUser, newAssignedUserName;
+  if (request['assignedUser'] && request['assignedUserName']) {
+    foundUser = await User.findOne({ _id: request['assignedUser'], name: request['assignedUserName'] }, null, { runValidators: true });
+    if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
+    else { newAssignedUser = request['assignedUser']; newAssignedUserName = request['assignedUserName']; }
+  } else if (request['assignedUser']) {
+    foundUser = await User.findOne({ _id: request['assignedUser'] }, null, { runValidators: true });
+    if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found.'); }
+    else { newAssignedUser = request['assignedUser']; newAssignedUserName = foundUser.name; }
+  } else if (request['assignedUserName']) {
+    return; // ignore because we don't have the user's id (multiple users can have the same name)
+  }
+  if (foundUser) {
+    if (task.assignedUser != '') {
+      const oldUser = await User.findOne({ _id: task.assignedUser }, null, { runValidators: true });
+      if (oldUser != null) {
+        const taskIndex = oldUser.pendingTasks.indexOf(task._id);
+        if (taskIndex != -1) {
+          oldUser.pendingTasks.splice(taskIndex, 1);
+          await oldUser.save();
+        }
+      }
+    }
+    foundUser.pendingTasks.push(task._id);
+    await foundUser.save();
+    task.assignedUser = newAssignedUser;
+    task.assignedUserName = newAssignedUserName;
+  }
+}
+
 
 module.exports = function (router) {
   const tasksRoute = router.route('/tasks');
@@ -48,19 +80,9 @@ module.exports = function (router) {
     try {
       const newTask = new Task(req.body);
       await newTask.validate(); // validate using mongoose
+      await verifyTwoWayRef(newTask, req.body);
       // mongoose will commit the transaction if the async function
       // executes successfully and attempt to retry if there was retryable error
-      if (req.body['assignedUser'] && req.body['assignedUserName']) {
-        const foundUser = await User.findOne({ _id: req.body['assignedUser'], name: req.body['assignedUserName'] }, null, { runValidators: true });
-        if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
-        else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = req.body['assignedUserName']; }
-      } else if (req.body['assignedUser']) {
-        const foundUser = await User.findOne({ _id: req.body['assignedUser'] }, null, { runValidators: true });
-        if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found.'); }
-        else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = foundUser.name; }
-      } else if (req.body['assignedUserName']) {
-        // ignore because we don't have the user's id (multiple users can have the same name)
-      }
       await Task.db.transaction(async () => { // (session)
         const savedTask = await newTask.save();
         res.status(201).json({ message: 'OK', data: {_id: savedTask._id, name: savedTask.name, description: savedTask.description, deadline: savedTask.deadline, completed: savedTask.completed, assignedUser: savedTask.assignedUser, assignedUserName: savedTask.assignedUserName, dateCreated: savedTask.dateCreated} });
@@ -125,17 +147,7 @@ module.exports = function (router) {
         if (req.body['description']) { foundTask.description = req.body['description']; }
         if (req.body['deadline']) { foundTask.deadline = req.body['deadline']; }
         if (req.body['completed']) { foundTask.completed = req.body['completed']; }
-        if (req.body['assignedUser'] && req.body['assignedUserName']) {
-          const foundUser = await User.findOne({ _id: req.body['assignedUser'], name: req.body['assignedUserName'] }, null, { runValidators: true });
-          if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
-          else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = req.body['assignedUserName']; }
-        } else if (req.body['assignedUser']) {
-          const foundUser = await User.findOne({ _id: req.body['assignedUser'] }, null, { runValidators: true });
-          if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found.'); }
-          else { foundTask.assignedUser = req.body['assignedUser']; foundTask.assignedUserName = foundUser.name; }
-        } else if (req.body['assignedUserName']) {
-          // ignore because we don't have the user's id (multiple users can have the same name)
-        }
+        await verifyTwoWayRef(foundTask, req.body);
         await foundTask.save();
         res.status(200).json({ message: 'OK', data: {_id: foundTask._id, name: foundTask.name, description: foundTask.description, deadline: foundTask.deadline, completed: foundTask.completed, assignedUser: foundTask.assignedUser, assignedUserName: foundTask.assignedUserName, dateCreated: foundTask.dateCreated} });
       });
