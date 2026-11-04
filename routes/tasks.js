@@ -200,6 +200,16 @@ module.exports = function (router) {
       await Task.db.transaction(async () => { // (session)
         const foundTask = await Task.findOne({ _id: taskId }, null, { runValidators: true });
         if (foundTask == null) { throw new mongoose.Error.DocumentNotFoundError('Task was not found.'); }
+        if (foundTask.assignedUser != '') {
+          const foundUser = await User.findOne({ _id: foundTask.assignedUser }, null, { runValidators: true });
+          if (foundUser != null) {
+            const taskIndex = foundUser.pendingTasks.indexOf(foundTask._id);
+            if (taskIndex != -1) {
+              foundUser.pendingTasks.splice(taskIndex, 1);
+              await foundUser.save();
+            }
+          }
+        }
         await Task.deleteOne({ _id: taskId }, { runValidators: true });
         res.status(204).json({ message: 'OK', data: {} });
       });

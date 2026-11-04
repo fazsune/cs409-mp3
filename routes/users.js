@@ -175,6 +175,14 @@ module.exports = function (router) {
       await User.db.transaction(async () => { // (session)
         const foundUser = await User.findOne({ _id: userId }, null, { runValidators: true });
         if (foundUser == null) { throw new mongoose.Error.DocumentNotFoundError('User was not found.'); }
+        for (const task of foundUser.pendingTasks) {
+          const foundTask = await Task.findOne({ _id: task }, null, { runValidators: true });
+          if (foundTask != null && foundTask.assignedUser == foundUser._id) {
+            foundTask.assignedUser = '';
+            foundTask.assignedUserName = 'unassigned';
+            await foundTask.save();
+          }
+        }
         await User.deleteOne({ _id: userId }, { runValidators: true });
         res.status(204).json({ message: 'OK', data: {} });
       });
