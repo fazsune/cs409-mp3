@@ -18,6 +18,24 @@ async function processRequest(request, query) {
 // Utility: Ensure two-way referencing (assignedUser, assignedUserName <-> pendingTasks)
 async function verifyTwoWayRef(task, request) {
   let foundUser, newAssignedUser, newAssignedUserName;
+  if (request['completed'] && task.assignedUser != '') {
+    foundUser = await User.findOne({ _id: task.assignedUser }, null, { runValidators: true });
+    if (foundUser) {
+      if (request['completed'] == true) {
+        const taskIndex = foundUser.pendingTasks.indexOf(task._id);
+        if (taskIndex != -1) {
+          foundUser.pendingTasks.splice(taskIndex, 1);
+          await foundUser.save();
+        }
+      } else {
+        const taskIndex = foundUser.pendingTasks.indexOf(task._id);
+        if (taskIndex == -1) {
+          foundUser.pendingTasks.push(task._id);
+          await foundUser.save();
+        }
+      }
+    }
+  }
   if (request['assignedUser'] && request['assignedUserName']) {
     foundUser = await User.findOne({ _id: request['assignedUser'], name: request['assignedUserName'] }, null, { runValidators: true });
     if (foundUser == null) { throw new TypeError('User that was specified with \'assignedUser\' was not found or does not match up with given \'assignedUserName\'.'); }
@@ -40,8 +58,11 @@ async function verifyTwoWayRef(task, request) {
         }
       }
     }
-    foundUser.pendingTasks.push(task._id);
-    await foundUser.save();
+    const taskIndex = foundUser.pendingTasks.indexOf(task._id);
+    if (taskIndex == -1) {
+      foundUser.pendingTasks.push(task._id);
+      await foundUser.save();
+    }
     task.assignedUser = newAssignedUser;
     task.assignedUserName = newAssignedUserName;
   }
